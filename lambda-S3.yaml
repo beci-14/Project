@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >
+  This CloudFormation template creates simple Lambda functions,
+  which prints CloudFormation resource Arn from the stack.  
+
+Parameters:
+  BucketName:
+    Type: String
+    Default: exercise-s3
+  LambdaName:
+    Type: String
+    Description: Name of an lambda function.
+    AllowedPattern: ^.*[^0-9]$
+    Default: exercise-lambda
+    
+Resources:
+  LambdaFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - lambda.amazonaws.com
+          Action:
+            - sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSLambdaExecute
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+      Path: "/"
+      Policies:
+      - PolicyName: LambdaFunctionPolicy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectAcl
+              - ssm:GetParameter
+            Resource: "*"
+
+  LambdaFunctionName:
+    Type: AWS::Lambda::Function    
+    Properties:
+      FunctionName: !Ref LambdaName
+      Runtime: python3.8
+      Timeout: 10
+      Handler: index.lambda_handler
+      Role: !GetAtt LambdaFunctionRole.Arn
+      Code:
+        ZipFile: |
+          def lambda_handler(event, context):
+            message = 'Hello Lambda World!'
+            return message
+      
+Outputs:
+  
+  
+  LambdaFunctionARN:
+    Description: Lambda function ARN.
+    Value:
+      Fn::GetAtt:
+        - LambdaFunctionName
+        - Arn
+    
